@@ -40,6 +40,46 @@ Class TaskTest extends TestCase
         $response->assertJsonCount(5);
     }
 
+    public function test_authenticated_user_can_fetch_all_tasks_with_status_filters()
+    {
+        $token = $this->createTaskForFilters();
+
+        app('auth')->forgetGuards();
+        $response = $this->withHeaders([
+            'Authorization' => 'Bearer ' . $token,
+        ])->getJson('/api/tasks?status=completed');
+
+        $response->assertStatus(200);
+        $response->assertJsonCount(3);
+    }
+
+    public function test_authenticated_user_can_fetch_all_tasks_with_date_filters()
+    {
+        $token = $this->createTaskForFilters();
+
+        app('auth')->forgetGuards();
+        $response = $this->withHeaders([
+            'Authorization' => 'Bearer ' . $token,
+        ])->getJson('/api/tasks?due_before=' . date('Y-m-d', strtotime('+4 days')));
+
+        $response->assertStatus(200);
+        $response->assertJsonCount(2);
+    }
+
+
+    public function test_authenticated_user_can_fetch_all_tasks_with_status_date_filters()
+    {
+        $token = $this->createTaskForFilters();
+
+        app('auth')->forgetGuards();
+        $response = $this->withHeaders([
+            'Authorization' => 'Bearer ' . $token,
+        ])->getJson('/api/tasks?status=completed&due_before=' . date('Y-m-d', strtotime('+4 days')));
+
+        $response->assertStatus(200);
+        $response->assertJsonCount(1);
+    }
+
     public function test_authenticated_user_can_create_task()
     {
         $response = $this->createTask($this->getTokenForUser());
@@ -192,5 +232,22 @@ Class TaskTest extends TestCase
             'status' => 'in-progress',
             'due_date' => date('Y-m-d', strtotime('tomorrow')),
         ]);
+    }
+
+    private function createTaskForFilters()
+    {
+        $user = User::factory()->create([
+            'email' => 'john@example.com',
+            'password' => bcrypt('password'),
+        ]);
+        $token = $user->createToken('test-token')->plainTextToken;
+
+        Task::factory()->for($user)->create(['due_date' => date('Y-m-d', strtotime('tomorrow')), 'status' => 'completed']);
+        Task::factory()->for($user)->create(['due_date' => date('Y-m-d', strtotime('tomorrow')), 'status' => 'in-progress']);
+        Task::factory()->for($user)->create(['due_date' => date('Y-m-d', strtotime('+7 days')), 'status' => 'in-progress']);
+        Task::factory()->for($user)->create(['due_date' => date('Y-m-d', strtotime('+7 days')), 'status' => 'completed']);
+        Task::factory()->for($user)->create(['due_date' => date('Y-m-d', strtotime('+7 days')), 'status' => 'completed']);
+
+        return $token;
     }
 }

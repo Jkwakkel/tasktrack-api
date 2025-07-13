@@ -17,7 +17,12 @@ class TaskController extends Controller
 
     function index(Request $request): Collection
     {
-        return Task::where('user_id', Auth::user()->id)->get();
+        $request->validate([
+            'status' => 'sometimes|in:completed,in-progress',
+            'due_before' => 'sometimes|date|after:now',
+        ]);
+
+        return Auth::user()->tasks()->status($request->status)->beforeDate($request->due_before)->get();
     }
 
     function store(TaskStoreRequest $request): Task
