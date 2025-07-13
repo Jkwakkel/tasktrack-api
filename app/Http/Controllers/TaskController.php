@@ -2,7 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Requests\TaskRequest;
+use App\Http\Requests\TaskStoreRequest;
+use App\Http\Requests\TaskUpdateRequest;
 use App\Models\Task;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -16,7 +17,7 @@ class TaskController extends Controller
         return Task::all();
     }
 
-    function store(TaskRequest $request): Task
+    function store(TaskStoreRequest $request): Task
     {
         $task = new Task($request->validated());
 
@@ -26,19 +27,15 @@ class TaskController extends Controller
         return $task;
     }
 
-    function show($id): Task
+    function show(Task $task): Task
     {
-        $task = Task::findOrFail($id);
-
         $this->authorize('view', $task);
 
         return $task;
     }
 
-    function update(TaskRequest $request): Task
+    function update(TaskUpdateRequest $request, Task $task): Task
     {
-        $task = Task::findOrFail($request->id);
-
         $this->authorize('update', $task);
 
         $task->update($request->validated());
@@ -46,10 +43,8 @@ class TaskController extends Controller
         return $task;
     }
 
-    function destroy($id): JsonResponse
+    function destroy(Task $task): JsonResponse
     {
-        $task = Task::findOrFail($id);
-
         $this->authorize('delete', $task);
 
         $task->delete();
